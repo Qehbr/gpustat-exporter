@@ -87,6 +87,21 @@ scrape_configs:
       - targets: ['localhost:9101']
 ```
 
+## Grafana Dashboard
+
+A pre-built Grafana dashboard is available in [grafana-dashboard.json](grafana-dashboard.json). It includes:
+
+- GPU utilization and memory overview
+- GPU status table with temperature and process info
+- Usage by user
+- Time-series graphs for utilization, memory, temperature, and process count
+
+**Import instructions:**
+1. Open Grafana
+2. Go to Dashboards → Import
+3. Upload `grafana-dashboard.json` or paste its contents
+4. Select your Prometheus datasource
+
 ## Build from Source
 
 Requires Go 1.21 or later.
