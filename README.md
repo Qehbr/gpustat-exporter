@@ -43,6 +43,23 @@ sudo systemctl status gpustat-exporter
 sudo journalctl -u gpustat-exporter -f
 ```
 
+### Run with Docker
+
+Requires [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) for GPU access.
+
+```bash
+# Build the image
+docker build -t gpustat-exporter .
+
+# Run the container
+docker run -d \
+  --name gpustat-exporter \
+  --restart unless-stopped \
+  -p 9101:9101 \
+  --gpus all \
+  gpustat-exporter
+```
+
 ### Flags
 
 - `--web.listen-address` - Address to listen on (default: `:9101`)
