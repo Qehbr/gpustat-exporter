@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o gpustat-exporter-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o gpustat-exporter-linux-arm64 .
+
+      - name: Create checksums
+        run: |
+          sha256sum gpustat-exporter-* > checksums.txt
+
+      - name: Generate release notes
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(git log --oneline $PREV_TAG..HEAD)
+          else
+            CHANGES=$(git log --oneline)
+          fi
+
+          cat > release_notes.md << EOF
+          ## Changes
+          \`\`\`
+          $CHANGES
+          \`\`\`
+
+          ## Download
+
+          **AMD64:**
+          \`\`\`bash
+          wget https://github.com/\${{ github.repository }}/releases/download/$TAG/gpustat-exporter-linux-amd64
+          chmod +x gpustat-exporter-linux-amd64
+          \`\`\`
+
+          **ARM64:**
+          \`\`\`bash
+          wget https://github.com/\${{ github.repository }}/releases/download/$TAG/gpustat-exporter-linux-arm64
+          chmod +x gpustat-exporter-linux-arm64
+          \`\`\`
+
+          See [README](https://github.com/\${{ github.repository }}/blob/$TAG/README.md) for usage.
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: |
+            gpustat-exporter-linux-amd64
+            gpustat-exporter-linux-arm64
+            checksums.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
