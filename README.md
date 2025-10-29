@@ -19,8 +19,28 @@ sudo mv gpustat-exporter-linux-amd64 /usr/local/bin/gpustat-exporter
 
 ## Usage
 
+### Run manually
+
 ```bash
 gpustat-exporter --web.listen-address=:9101 --web.telemetry-path=/metrics
+```
+
+### Run as systemd service
+
+```bash
+# Download the service file
+sudo wget -O /etc/systemd/system/gpustat-exporter.service https://raw.githubusercontent.com/qehbr/gpustat-exporter/main/gpustat-exporter.service
+
+# Reload systemd and enable the service
+sudo systemctl daemon-reload
+sudo systemctl enable gpustat-exporter
+sudo systemctl start gpustat-exporter
+
+# Check status
+sudo systemctl status gpustat-exporter
+
+# View logs
+sudo journalctl -u gpustat-exporter -f
 ```
 
 ### Flags

@@ -1,0 +1,14 @@
+[Unit]
+Description=GPUstat Prometheus Exporter
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+ExecStart=/usr/local/bin/gpustat-exporter --web.listen-address=:9101 --web.telemetry-path=/metrics
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
