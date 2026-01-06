@@ -314,6 +314,17 @@ func collectMetrics() error {
 		return fmt.Errorf("failed to parse gpustat output: %w", err)
 	}
 
+	// Reset all metrics before updating to ensure single source of truth
+	gpuTemperature.Reset()
+	gpuUtilization.Reset()
+	gpuMemoryUsed.Reset()
+	gpuMemoryTotal.Reset()
+	gpuMemoryUtilization.Reset()
+	gpuProcessCount.Reset()
+	gpuUserMemory.Reset()
+	gpuProcessMemory.Reset()
+	driverVersion.Reset()
+
 	// Update driver version
 	if stats.DriverVersion != "" {
 		driverVersion.WithLabelValues(stats.Hostname, stats.DriverVersion).Set(1)
