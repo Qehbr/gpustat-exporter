@@ -27,6 +27,10 @@ var (
 	gpustatPath    = flag.String("gpustat.path", "gpustat", "Path to gpustat binary")
 	scrapeInterval = flag.Duration("scrape.interval", 30*time.Second, "Interval between gpustat scrapes")
 
+	// Track previous metric label sets for cleanup
+	previousUserMemoryLabels    = make(map[string]bool)
+	previousProcessMemoryLabels = make(map[string]bool)
+
 	// Prometheus metrics
 	gpuTemperature = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -314,16 +318,18 @@ func collectMetrics() error {
 		return fmt.Errorf("failed to parse gpustat output: %w", err)
 	}
 
-	// Reset all metrics before updating to ensure single source of truth
+	// Reset basic GPU metrics (these are always set for all GPUs)
 	gpuTemperature.Reset()
 	gpuUtilization.Reset()
 	gpuMemoryUsed.Reset()
 	gpuMemoryTotal.Reset()
 	gpuMemoryUtilization.Reset()
 	gpuProcessCount.Reset()
-	gpuUserMemory.Reset()
-	gpuProcessMemory.Reset()
 	driverVersion.Reset()
+
+	// Track current label sets for user and process metrics
+	currentUserMemoryLabels := make(map[string]bool)
+	currentProcessMemoryLabels := make(map[string]bool)
 
 	// Update driver version
 	if stats.DriverVersion != "" {
@@ -358,6 +364,9 @@ func collectMetrics() error {
 			userMemory[proc.Username] += proc.Memory
 
 			// Individual process memory
+			procLabelKey := fmt.Sprintf("%s|%s|%s|%s|%.0fM", stats.Hostname, gpu.Index, gpu.Name, proc.Username, proc.Memory)
+			currentProcessMemoryLabels[procLabelKey] = true
+
 			procLabels := prometheus.Labels{
 				"hostname":       stats.Hostname,
 				"gpu_index":      gpu.Index,
@@ -370,6 +379,9 @@ func collectMetrics() error {
 
 		// User memory totals
 		for username, memory := range userMemory {
+			userLabelKey := fmt.Sprintf("%s|%s|%s|%s", stats.Hostname, gpu.Index, gpu.Name, username)
+			currentUserMemoryLabels[userLabelKey] = true
+
 			userLabels := prometheus.Labels{
 				"hostname":  stats.Hostname,
 				"gpu_index": gpu.Index,
@@ -379,6 +391,40 @@ func collectMetrics() error {
 			gpuUserMemory.With(userLabels).Set(memory)
 		}
 	}
+
+	// Delete stale user memory metrics
+	for labelKey := range previousUserMemoryLabels {
+		if !currentUserMemoryLabels[labelKey] {
+			// Parse the label key back into label values
+			parts := strings.Split(labelKey, "|")
+			if len(parts) == 4 {
+				deleted := gpuUserMemory.DeleteLabelValues(parts[0], parts[1], parts[2], parts[3])
+				if deleted {
+					log.Printf("Deleted stale user memory metric: hostname=%s gpu_index=%s gpu_name=%s username=%s",
+						parts[0], parts[1], parts[2], parts[3])
+				}
+			}
+		}
+	}
+
+	// Delete stale process memory metrics
+	for labelKey := range previousProcessMemoryLabels {
+		if !currentProcessMemoryLabels[labelKey] {
+			// Parse the label key back into label values
+			parts := strings.Split(labelKey, "|")
+			if len(parts) == 5 {
+				deleted := gpuProcessMemory.DeleteLabelValues(parts[0], parts[1], parts[2], parts[3], parts[4])
+				if deleted {
+					log.Printf("Deleted stale process memory metric: hostname=%s gpu_index=%s gpu_name=%s username=%s process_memory=%s",
+						parts[0], parts[1], parts[2], parts[3], parts[4])
+				}
+			}
+		}
+	}
+
+	// Update the previous label sets for next scrape
+	previousUserMemoryLabels = currentUserMemoryLabels
+	previousProcessMemoryLabels = currentProcessMemoryLabels
 
 	duration := time.Since(start).Seconds()
 	scrapeDuration.Set(duration)
