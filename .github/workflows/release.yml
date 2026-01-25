@@ -28,8 +28,9 @@ jobs:
 
       - name: Build binaries
         run: |
-          GOOS=linux GOARCH=amd64 go build -o gpustat-exporter-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -o gpustat-exporter-linux-arm64 .
+          VERSION=${GITHUB_REF#refs/tags/}
+          GOOS=linux GOARCH=amd64 go build -ldflags="-X 'main.version=${VERSION}'" -o gpustat-exporter-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags="-X 'main.version=${VERSION}'" -o gpustat-exporter-linux-arm64 .
 
       - name: Create checksums
         run: |

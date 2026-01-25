@@ -21,6 +21,9 @@ const (
 )
 
 var (
+	// Version is set via ldflags during build
+	version = "dev"
+
 	// Command line flags
 	listenAddress  = flag.String("web.listen-address", ":9101", "Address to listen on for web interface and telemetry")
 	metricsPath    = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics")
@@ -473,12 +476,17 @@ func main() {
 <p><a href='%s'>Metrics</a></p>
 <h2>Build Info</h2>
 <ul>
-<li>Version: 1.0.0</li>
+<li>Version: %s</li>
 <li>Scrape Interval: %s</li>
 <li>GPUstat Path: %s</li>
 </ul>
 </body>
-</html>`, *metricsPath, *scrapeInterval, *gpustatPath)
+</html>`, *metricsPath, version, *scrapeInterval, *gpustatPath)
+	})
+
+	http.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = fmt.Fprintf(w, "%s\n", version)
 	})
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -487,7 +495,7 @@ func main() {
 	})
 
 	// Start HTTP server
-	log.Printf("Starting gpustat-exporter on %s", *listenAddress)
+	log.Printf("Starting gpustat-exporter version %s on %s", version, *listenAddress)
 	log.Printf("Metrics available at %s%s", *listenAddress, *metricsPath)
 	log.Printf("Scrape interval: %s", *scrapeInterval)
 

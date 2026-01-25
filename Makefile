@@ -1,11 +1,12 @@
 .PHONY: build clean help
 
 BINARY_NAME=gpustat-exporter
+VERSION?=dev
 
 # Build the binary
 build:
-	@echo "Building $(BINARY_NAME)..."
-	go build -o $(BINARY_NAME) .
+	@echo "Building $(BINARY_NAME) version $(VERSION)..."
+	go build -ldflags="-X 'main.version=$(VERSION)'" -o $(BINARY_NAME) .
 	@echo "Build complete: $(BINARY_NAME)"
 
 # Clean build artifacts
