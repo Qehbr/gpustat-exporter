@@ -89,7 +89,14 @@ scrape_configs:
 
 ## Grafana Dashboard
 
-A pre-built Grafana dashboard is available in [grafana-dashboard.json](grafana-dashboard.json). It includes:
+A pre-built Grafana dashboard is available in [grafana-dashboard.json](grafana-dashboard.json). 
+
+<img width="2242" height="1003" alt="image" src="https://github.com/user-attachments/assets/bef7266e-b4c4-41d4-a62e-eeb1871fd480" />
+
+<img width="2249" height="631" alt="image" src="https://github.com/user-attachments/assets/f5d3b51f-017e-416e-81f0-bf47d92382dc" />
+
+
+It includes:
 
 - GPU utilization and memory overview
 - GPU status table with temperature and process info
